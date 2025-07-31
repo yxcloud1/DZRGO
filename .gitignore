@@ -8,7 +8,7 @@
 *.exe
 *.log
 *.err
-
+~$*
 log/
 err/
 bin/
