@@ -1,0 +1,16 @@
+
+*.*
+*
+!*.*
+!*/
+
+*.json
+*.exe
+*.log
+*.err
+
+log/
+err/
+bin/
+**/log/
+**/err/
