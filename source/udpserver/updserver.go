@@ -1,7 +1,6 @@
-package tcpserver
+package udpserver
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -33,22 +32,18 @@ func HexDump(data []byte) {
 		}
 		line := data[i:end]
 
-		// 偏移地址
 		fmt.Printf("%08X  ", i)
-
-		// 十六进制部分
 		for j := 0; j < bytesPerLine; j++ {
 			if j < len(line) {
 				fmt.Printf("%02X ", line[j])
 			} else {
-				fmt.Print("   ") // 占位对齐
+				fmt.Print("   ")
 			}
 			if j == 7 {
-				fmt.Print(" ") // 中间空格
+				fmt.Print(" ")
 			}
 		}
 
-		// ASCII 部分
 		fmt.Print(" |")
 		for _, b := range line {
 			if b >= 32 && b <= 126 {
@@ -113,24 +108,12 @@ func decodeToUTF8(data []byte) (string, error) {
 
 func normalizeCharset(name string) string {
 	return "gb18030"
-	/*switch name {
-	case "GB-18030", "gb18030":
-		return "gb18030"
-	case "GBK", "gbk":
-		return "gbk"
-	case "ISO-8859-1":
-		return "iso-8859-1"
-	case "WINDOWS-1252", "windows-1252":
-		return "windows-1252"
-	default:
-		return strings.ToLower(name)
-	}*/
 }
 
 const idleTimeout = 30 * time.Second
 
 var (
-	listeners []net.Listener
+	listeners []*net.UDPConn
 	stopOnce  sync.Once
 	stopChan  = make(chan struct{})
 	wg        sync.WaitGroup
@@ -139,7 +122,6 @@ var (
 	decoder   func([]byte) (string, error)
 )
 
-// Start 启动多个端口，每个端口有独立的 callback
 func Start(handlers map[string]func(clientAddr, message string)) error {
 	mu.Lock()
 	stopped = false
@@ -147,24 +129,29 @@ func Start(handlers map[string]func(clientAddr, message string)) error {
 	mu.Unlock()
 
 	for addr, handler := range handlers {
-		ln, err := net.Listen("tcp", addr)
+		udpAddr, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {
-			 log.Printf("监听失败 %s: %v", addr, err)
-			 continue;
+			log.Printf("解析地址失败 %s: %v", addr, err)
+			continue
 		}
-		fmt.Println("监听启动:", addr)
+
+		conn, err := net.ListenUDP("udp", udpAddr)
+		if err != nil {
+			log.Printf("监听失败 %s: %v", addr, err)
+			continue
+		}
+		fmt.Println("UDP监听启动:", addr)
 
 		mu.Lock()
-		listeners = append(listeners, ln)
+		listeners = append(listeners, conn)
 		mu.Unlock()
 
 		wg.Add(1)
-		go acceptLoop(ln, handler)
+		go readLoop(conn, handler)
 	}
 	return nil
 }
 
-// Stop 关闭所有监听
 func Stop() {
 	stopOnce.Do(func() {
 		mu.Lock()
@@ -176,80 +163,52 @@ func Stop() {
 		mu.Unlock()
 
 		close(stopChan)
-		for _, ln := range listeners {
-			ln.Close()
+		for _, conn := range listeners {
+			conn.Close()
 		}
 		listeners = nil
 		wg.Wait()
-		fmt.Println("所有监听器已关闭")
+		fmt.Println("所有UDP监听器已关闭")
 	})
 }
 
-func acceptLoop(listener net.Listener, callback func(clientAddr, message string)) {
+func readLoop(conn *net.UDPConn, callback func(clientAddr, message string)) {
 	defer wg.Done()
+	buf := make([]byte, 4096)
+
 	for {
-		conn, err := listener.Accept()
+		conn.SetReadDeadline(time.Now().Add(idleTimeout))
+		n, remoteAddr, err := conn.ReadFromUDP(buf)
 		if err != nil {
 			select {
 			case <-stopChan:
 				return
 			default:
-				fmt.Println("接收连接失败:", err)
+				log.Printf("UDP读取失败: %v", err)
 				continue
 			}
 		}
+
+		data := append([]byte(nil), buf[:n]...) // 拷贝数据防止复用
 		wg.Add(1)
-		go handleConnection(conn, callback)
+		go func(addr *net.UDPAddr, msg []byte) {
+			defer wg.Done()
+			processPacket(conn, addr, msg, callback)
+		}(remoteAddr, data)
 	}
 }
 
-func handleConnection(conn net.Conn, callback func(clientAddr, message string)) {
-	defer wg.Done()
-	defer conn.Close()
+func processPacket(conn *net.UDPConn, remoteAddr *net.UDPAddr, data []byte, callback func(clientAddr, message string)) {
+	addr := remoteAddr.String()
+	log.Printf("%s接收原始数据:", addr)
+	HexDump(data)
 
-	addr := conn.RemoteAddr().String()
-	log.Printf("客户端已连接: %s\n", addr)
-
-	reader := bufio.NewReader(conn)
-
-	for {
-		conn.SetReadDeadline(time.Now().Add(idleTimeout))
-
-		data, err := reader.ReadBytes('\n')
-		if err != nil {
-			log.Printf("连接关闭: %s，原因: %v\n", addr, err)
-			if len(data) > 0 {
-				log.Printf("%s接收原始数据:", addr)
-				HexDump(data)
-				if decoder == nil {
-					log.Printf("未设置解码器，原始数据: %v\n", data)
-				}
-				decoded, err := decoder(data)
-				if err != nil {
-					log.Printf("解码失败: %v\n", err)
-				}
-
-				callback(addr, trimNewline(decoded))
-			}
-			return
-		}
-
-		if decoder == nil {
-			log.Printf("未设置解码器，原始数据: %v\n", data)
-			continue
-		}
-		log.Printf("%s接收原始数据:", addr)
-		HexDump(data)
-		decoded, err := decoder(data)
-		if err != nil {
-			log.Printf("解码失败: %v\n", err)
-			continue
-		}
-
-		callback(addr, trimNewline(decoded))
-
-		//conn.Write([]byte("收到：" + decoded + "\n"))
+	decoded, err := decoder(data)
+	if err != nil {
+		log.Printf("解码失败: %v\n", err)
+		return
 	}
+	callback(addr, trimNewline(decoded))
 }
 
 func trimNewline(s string) string {

@@ -13,12 +13,14 @@
 | TSDB     |          | hc        | 10.17.50.12   |               |                      | dc/dc<br />admin/acetek1234                   |                     |
 | PVE      |          |           |               |               |                      | root/Ajn123123                                |                     |
 
-| IP           | 类型          | 安装位置 | 备注 |
-| ------------ | ------------- | -------- | ---- |
-| 10.17.50.200 | 485串口服务器 | 测试用   |      |
-| 10.17.50.201 | 232串口服务器 | 测试用   |      |
-|              |               |          |      |
-|              |               |          |      |
+| IP           | 类型           | 安装位置                      | 串口配置                       | 备注                                              |     |
+| ------------ | -------------- | ----------------------------- | ------------------------------ | ------------------------------------------------- | --- |
+| 10.17.50.200 | 232 串口服务器 | 1 期化检实验室两个天平        | 9600N81                        | 天平 1           60001<br />天平 2          60002 |     |
+|              |                |                               |                                |                                                   |     |
+| 10.17.50.201 | 232 串口服务器 | 1 期化检实验室 PH 计/电导率仪 | COM1 1200N81<br />COM2 4800N81 | <br />PH 端口        60001<br />电导率端口 60002  |     |
+|              |                |                               |                                |                                                   |     |
+| 10.17.50.    |                |                               |                                |                                                   |     |
+|              |                |                               |                                |                                                   |     |
 
 Token: apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g
 HTTP Requests Header: Authorization: Bearer apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g
@@ -34,4 +36,5 @@ HTTP Requests Header: Authorization: Bearer apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOo
 值工艺技术三部
 
 申请 Token
+
 # DZRGO

@@ -59,10 +59,9 @@ func (mgr *DriverMgr) load() error {
 						return nil
 					}else{
 						if val, err:= valconv.StringToTargetType(item.Value, item.DataType);err != nil{
-
 							return val
 						}else{
-							return nil
+							return val
 						}
 					}
 				}(),

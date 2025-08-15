@@ -1,6 +1,8 @@
 package conf
 
 import (
+	"log"
+
 	"github.com/yxcloud1/go-comm/config"
 )
 
@@ -48,14 +50,19 @@ type DataCollection struct {
 }
 
 var (
-	conf Config
+	conf *Config = nil
 )
 
 func init() {
-	config.Load(&conf)
-	config.Save(&conf)
+	conf = nil
 }
 
 func Conf() *Config {
-	return &conf
+	if conf == nil {
+		conf = &Config{}
+		log.Println("Workdir:", config.WorkDir())
+		log.Println("load config:", config.Load(&conf))
+		log.Println("save config:", config.Save(&conf))
+	}
+	return conf
 }

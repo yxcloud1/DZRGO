@@ -4,6 +4,7 @@ import (
 	"acetek-mes/conf"
 	"acetek-mes/handler"
 	"acetek-mes/tcpserver"
+	"acetek-mes/udpserver"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -27,8 +28,10 @@ func startApi() {
 	if path == "" {
 		path = "/"
 	}
+	r.POST(path+"/serial", handler.LimsDataCollection2)
 	path = path + "/:type/:id"
 	r.POST(path, handler.LimsDataCollection)
+
 	go r.Run(conf.Conf().Api.ListenAddr)
 
 }
@@ -37,7 +40,10 @@ func stop() error {
 	logger.TxtLog("Stopping application...")
 	tcpserver.Stop()
 	time.Sleep(time.Second)
+	udpserver.Stop()
+	time.Sleep(time.Second)
 	logger.TxtLog("Application stopped.")
+
 	return nil
 }
 
@@ -45,8 +51,9 @@ func start() error {
 	startApi()
 	handlers := make(map[string]func(clientAddr string, message string))
 	handlers[":9100"] = receiveCallback9100
-	handlers[":9002"] = receiveCallback9002
 	tcpserver.Start(handlers)
+	handlers[":9002"] = receiveCallback9002
+	udpserver.Start(handlers)
 	return nil
 }
 func receiveCallback9100(addr string, content string) {

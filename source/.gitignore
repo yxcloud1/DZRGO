@@ -9,6 +9,7 @@
 *.log
 *.err
 
+release/
 log/
 err/
 bin/
