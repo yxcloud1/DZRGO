@@ -4,6 +4,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 type DelayedMessage struct {
@@ -38,7 +39,8 @@ func (d *DelayedMessage) Receive(message string, raw_message []byte) {
 		d.message = message
 		d.raw_message = raw_message
 	}
-	if d.endFlag != "" && strings.HasSuffix(strings.TrimRight(d.message, "\r\n"), strings.TrimRight(d.endFlag, "\r\n")) {
+	if d.endFlag != "" && strings.HasSuffix(strings.TrimRightFunc(d.message, unicode.IsSpace),
+											strings.TrimRightFunc(d.endFlag, unicode.IsSpace)) {
 			if(d.timer != nil){
 			d.timer.Stop()
 			}

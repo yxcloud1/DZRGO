@@ -7,7 +7,6 @@ import (
 	"acetek-mes/tcpserver"
 	"acetek-mes/udpserver"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -86,17 +85,17 @@ func sendToLimsDCApi(addr string, port string, content string, raw []byte) error
 	//deviceType, deviceID, _, _ := dataservice.FindDeviceByIP(addr, port)
 	url = fmt.Sprintf("%s%s/serial", url, conf.Conf().Api.Path)
 
-	byts, _ := json.Marshal(map[string]interface{}{
-		"data": content,
-		"raw" : raw,
-	})
+	//byts, _ := json.Marshal(map[string]interface{}{
+	//	"data": content,
+	//	"raw" : raw,
+	//})
 	//X-Forwarded-For
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(byts))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(raw))
 	if err != nil {
 		log.Println("创建请求失败:", err)
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	//req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Forwarded-For", addr)
 	client := &http.Client{}
 	resp, err := client.Do(req)
