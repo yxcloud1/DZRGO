@@ -3,11 +3,13 @@ package main
 import (
 	"acetek-mes/conf"
 	"acetek-mes/handler"
+	"acetek-mes/model"
 	"acetek-mes/tcpserver"
 	"acetek-mes/udpserver"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -16,9 +18,13 @@ import (
 	"github.com/yxcloud1/go-comm/logger"
 	"github.com/yxcloud1/go-comm/winservice"
 )
+var(
+
+)
 
 func init() {
 	db.SetOption(conf.Conf().DB.Type, conf.Conf().DB.Url)
+	db.DB().Conn().Debug().AutoMigrate(&model.LimsDcRequestLog{})
 }
 
 func startApi() {
@@ -49,46 +55,25 @@ func stop() error {
 
 func start() error {
 	startApi()
-	handlers := make(map[string]func(clientAddr string, message string))
+	handlers := make(map[string]func(clientAddr string, message string, raw []byte), 0)
 	handlers[":9100"] = receiveCallback9100
 	tcpserver.Start(handlers)
 	handlers[":9002"] = receiveCallback9002
 	udpserver.Start(handlers)
 	return nil
 }
-func receiveCallback9100(addr string, content string) {
+func receiveCallback9100(addr string, content string, raw []byte) {
 	if content != "" {
-		sendToLimsDCApi(addr, "9100", content)
+		sendToLimsDCApi(addr, "9100", content, raw)
 	}
 }
 
-func receiveCallback9002(addr string, content string) {
+func receiveCallback9002(addr string, content string, raw []byte) {
 	if content != "" {
-		sendToLimsDCApi(addr, "9002", content)
+		sendToLimsDCApi(addr, "9002", content, raw)
 	}
 }
-
-func findDeviceByIP(addr string , port string) (string, string){
-	if res, err := db.DB().ExecuteQuery("exec sp_lims_query_device_by_ip @addr = ? , @type = ? ", addr, port);err != nil{
-	return addr, port
-	}else{
-		if len(res) > 0{
-			res1 := addr
-			res2 := port
-			if v, ok := res[0]["type"]; ok{
-				res1 = fmt.Sprintf("%v", v)
-			}
-			if v, ok := res[0]["addr"]; ok{
-				res2 = fmt.Sprintf("%v", v)
-			}
-			return res1, res2
-		}else{
-			return addr, port
-		}
-	}
-}
-
-func sendToLimsDCApi(addr string, port string, content string) error {
+func sendToLimsDCApi(addr string, port string, content string, raw []byte) error {
 	url := conf.Conf().Api.ListenAddr
 	if url == "" {
 		url = ":8000"
@@ -98,13 +83,24 @@ func sendToLimsDCApi(addr string, port string, content string) error {
 	} else {
 		url = "http://" + url
 	}
-	deviceType, deviceID := findDeviceByIP(addr, port)
-	url = fmt.Sprintf("%s%s/%s/%s", url, conf.Conf().Api.Path, deviceType, deviceID)
+	//deviceType, deviceID, _, _ := dataservice.FindDeviceByIP(addr, port)
+	url = fmt.Sprintf("%s%s/serial", url, conf.Conf().Api.Path)
 
 	byts, _ := json.Marshal(map[string]interface{}{
 		"data": content,
+		"raw" : raw,
 	})
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(byts))
+	//X-Forwarded-For
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(byts))
+	if err != nil {
+		log.Println("创建请求失败:", err)
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", addr)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	//resp, err := http.Post(url, "application/json", bytes.NewBuffer(byts))
 	if err != nil {
 		fmt.Printf("POST失败: %v\n", err)
 		return err

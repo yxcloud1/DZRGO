@@ -46,6 +46,9 @@ func GlobalMiddleware() gin.HandlerFunc {
 		duration := time.Since(start)
 		var sb strings.Builder
 		sb.WriteString("========== [HTTP REQUEST] ==========\r\n")
+		for k, v := range c.Request.Header{
+			sb.WriteString(fmt.Sprintf("%s: %s\r\n", k, strings.Join(v, ", ")))
+		}
 		sb.WriteString(fmt.Sprintf("[Time]     %v\r\n", start.Format("2006-01-02 15:04:05")))
 		sb.WriteString(fmt.Sprintf("[Method]   %s\r\n", method))
 		sb.WriteString(fmt.Sprintf("[Path]     %s\r\n", path))

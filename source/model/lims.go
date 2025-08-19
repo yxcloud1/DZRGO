@@ -20,6 +20,7 @@ type LimsDcRequestLog struct {
 	DeviceType string    `gorm:"size:100;not null"` // 名称字段
 	DeviceID   string    `gorm:"size:255"`          // 可选描述信息
 	Request    string    `gorm:"column:request"`
+	RawData    string    `gorm:"column:raw_data"` // 原始数据
 	Response   string    `gorm:"column:response"`
 	CreatedAt  time.Time `gorm:"type:DateTime"` // 自动维护
 }

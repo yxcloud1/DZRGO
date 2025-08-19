@@ -122,7 +122,7 @@ var (
 	decoder   func([]byte) (string, error)
 )
 
-func Start(handlers map[string]func(clientAddr, message string)) error {
+func Start(handlers map[string]func(clientAddr, message string, raw[] byte)) error {
 	mu.Lock()
 	stopped = false
 	decoder = decodeToUTF8
@@ -172,7 +172,7 @@ func Stop() {
 	})
 }
 
-func readLoop(conn *net.UDPConn, callback func(clientAddr, message string)) {
+func readLoop(conn *net.UDPConn, callback func(clientAddr, message string, raw []byte)) {
 	defer wg.Done()
 	buf := make([]byte, 4096)
 
@@ -184,7 +184,7 @@ func readLoop(conn *net.UDPConn, callback func(clientAddr, message string)) {
 			case <-stopChan:
 				return
 			default:
-				log.Printf("UDP读取失败: %v", err)
+				//log.Printf("UDP读取失败: %v", err)
 				continue
 			}
 		}
@@ -198,7 +198,7 @@ func readLoop(conn *net.UDPConn, callback func(clientAddr, message string)) {
 	}
 }
 
-func processPacket(conn *net.UDPConn, remoteAddr *net.UDPAddr, data []byte, callback func(clientAddr, message string)) {
+func processPacket(conn *net.UDPConn, remoteAddr *net.UDPAddr, data []byte, callback func(clientAddr, message string, raw []byte)) {
 	addr := remoteAddr.String()
 	log.Printf("%s接收原始数据:", addr)
 	HexDump(data)
@@ -208,7 +208,7 @@ func processPacket(conn *net.UDPConn, remoteAddr *net.UDPAddr, data []byte, call
 		log.Printf("解码失败: %v\n", err)
 		return
 	}
-	callback(addr, trimNewline(decoded))
+	callback(addr, (decoded), data)
 }
 
 func trimNewline(s string) string {

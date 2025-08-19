@@ -140,7 +140,7 @@ var (
 )
 
 // Start 启动多个端口，每个端口有独立的 callback
-func Start(handlers map[string]func(clientAddr, message string)) error {
+func Start(handlers map[string]func(clientAddr, message string, raw []byte)) error {
 	mu.Lock()
 	stopped = false
 	decoder = decodeToUTF8
@@ -185,7 +185,7 @@ func Stop() {
 	})
 }
 
-func acceptLoop(listener net.Listener, callback func(clientAddr, message string)) {
+func acceptLoop(listener net.Listener, callback func(clientAddr, message string, raw []byte)) {
 	defer wg.Done()
 	for {
 		conn, err := listener.Accept()
@@ -203,7 +203,7 @@ func acceptLoop(listener net.Listener, callback func(clientAddr, message string)
 	}
 }
 
-func handleConnection(conn net.Conn, callback func(clientAddr, message string)) {
+func handleConnection(conn net.Conn, callback func(clientAddr, message string, raw []byte)) {
 	defer wg.Done()
 	defer conn.Close()
 
@@ -229,7 +229,7 @@ func handleConnection(conn net.Conn, callback func(clientAddr, message string)) 
 					log.Printf("解码失败: %v\n", err)
 				}
 
-				callback(addr, trimNewline(decoded))
+				callback(addr, (decoded), data)
 			}
 			return
 		}
@@ -246,7 +246,7 @@ func handleConnection(conn net.Conn, callback func(clientAddr, message string)) 
 			continue
 		}
 
-		callback(addr, trimNewline(decoded))
+		callback(addr, (decoded), data)
 
 		//conn.Write([]byte("收到：" + decoded + "\n"))
 	}
