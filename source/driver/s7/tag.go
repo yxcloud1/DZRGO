@@ -41,14 +41,14 @@ type S7Tag struct {
 	Valid     bool
 	Raw       string
 	ErrorInfo string
-	DataType string
+	DataType  string
 }
 
 func ParseAddress(address string) (*S7Tag, error) {
 	tag := &S7Tag{Raw: address, Length: 1}
 
 	dbRe := regexp.MustCompile(`(?i)^DB(\d+)\.DB([BXWD])(\d+)(?:\.(\d))?$`)
-	stringRe := regexp.MustCompile(`(?i)^DB(\d+)\.STRING(\d+)$`)
+	stringRe := regexp.MustCompile(`(?i)^DB(\d+)\.STRING(\d+)(?:\((\d+)\))?$`)
 	simpleRe := regexp.MustCompile(`(?i)^([PIQMVTCS])(\d+)(?:\.(\d))?$`)
 	memRe := regexp.MustCompile(`(?i)^([VMIQ])([BWD])(\d+)$`) // 新增支持 VD100 等格式
 
@@ -58,8 +58,14 @@ func ParseAddress(address string) (*S7Tag, error) {
 		tag.DBNumber = db
 		tag.Area = AreaDB
 		tag.WordLen = Byte
-		tag.Length = 256 // 固定字符串长度
+		offset, _ := strconv.Atoi(match[2])
+		tag.Length = 32
+		l, err := strconv.Atoi(match[3])
+		if err == nil && l > 0 && l <= 254 {
+			tag.Length = l + 2
+		}
 		tag.DataType = "STRING"
+		tag.Start = offset
 		tag.Valid = true
 		return tag, nil
 	}

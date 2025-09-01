@@ -158,7 +158,7 @@ func (c *S7Client) Read() (map[string]interface{}, error) {
 			default:
 				log.Println("tag ")
 			}
-			log.Printf("%+v %s", s7tag, hex.EncodeToString(byts[0:s7tag.Length]))
+			log.Printf("resultError:%v\n %+v %s", resultError, s7tag, hex.EncodeToString(byts[0:s7tag.Length]))
 			value, err := ParseValueFromBuffer(s7tag, byts)
 			if resultError == nil && err == nil {
 				result[v.Name] = value
