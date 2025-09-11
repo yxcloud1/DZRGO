@@ -14,6 +14,7 @@ import (
 
 var (
 	delayedTasks = make(map[string]*DelayedMessage, 0)
+
 )
 
 func getOriginalURL(c *gin.Context) string {
@@ -26,9 +27,7 @@ func getOriginalURL(c *gin.Context) string {
 	if host == "" {
 		host = c.Request.Host
 	}
-
 	uri := c.Request.RequestURI
-
 	return fmt.Sprintf("%s://%s%s", proto, host, uri)
 }
 
@@ -62,7 +61,7 @@ func LimsDataCollection(c *gin.Context) {
 	paramID := c.Param("id")
 	data := make(map[string]string)
 	body, _ := c.GetRawData()
-	
+
 	response := gin.H{}
 	rawID, _ := dataservice.SaveDcLog(getOriginalURL(c), getClientIP(c), paramType, paramID, string(body), body)
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -70,7 +69,7 @@ func LimsDataCollection(c *gin.Context) {
 		c.JSON(400, response)
 		return
 	}
-
+	sendToClient(paramType, paramID, strings.Trim(data["data"], "\r\n"))
 	response = dataservice.SaveReciveeData(rawID, paramType, paramID, data["data"], parseReceiveData(data["data"], "\r\n"))
 	c.JSON(http.StatusOK, response)
 }
@@ -82,8 +81,10 @@ func LimsDataCollection2(c *gin.Context) {
 
 	context := string(body)
 	key := fmt.Sprintf("%s_%s", paramType, paramID)
+
 	if dt, ok := delayedTasks[key]; !ok {
 		delayedTasks[key] = NewDelayedTask(paramType, paramID, endFlag, time.Millisecond*time.Duration(dealy), func(d *DelayedMessage) {
+			sendToClient(paramType, paramID, strings.Trim(string(body), "\r\n"))
 			dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
 		})
 	} else {
@@ -99,5 +100,6 @@ func LimsDataCollection2(c *gin.Context) {
 }
 
 func parseReceiveData(data string, splitStr string) []string {
+	data = strings.Trim(data, "\n\r")
 	return strings.Split(data, splitStr)
 }

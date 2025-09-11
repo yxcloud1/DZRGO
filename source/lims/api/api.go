@@ -33,6 +33,7 @@ func startApi() {
 	if path == "" {
 		path = "/"
 	}
+	r.GET(path+"/subscribe" + "/:type/:id", handler.SubscribeLimsDataCollection)
 	r.POST(path+"/serial", handler.LimsDataCollection2)
 	path = path + "/:type/:id"
 	r.POST(path, handler.LimsDataCollection)
