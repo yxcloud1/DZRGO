@@ -1,9 +1,14 @@
 package handler
 
 import (
+	"acetek-mes/redishelper"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,6 +23,7 @@ var (
 	}
 	clientsMu sync.Mutex
 	clients   = make(map[string]map[uuid.UUID]*websocket.Conn)
+	sdmanger  = NewManager()
 )
 
 func addClient(clientId string, id uuid.UUID, conn *websocket.Conn) {
@@ -30,7 +36,7 @@ func addClient(clientId string, id uuid.UUID, conn *websocket.Conn) {
 }
 
 // 移除客户端
-func removeClient(clientId string , id uuid.UUID) {
+func removeClient(clientId string, id uuid.UUID) {
 	clientsMu.Lock()
 	if c, ok := clients[string(clientId)]; ok {
 		if conn, exists := c[id]; exists {
@@ -41,9 +47,49 @@ func removeClient(clientId string , id uuid.UUID) {
 	clientsMu.Unlock()
 }
 
+func sendToResis(typeId string, epid string, msg string) error {
+	switch typeId {
+	case "PH计", "电导率测试仪":
+		vals := strings.Split(msg, "\r\n")
+		if len(vals) >= 4 {
+			if val, err := parseNumber(vals[3]); err == nil {
+				return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+			}
+		}
+	case "快速水份仪":
+		vals := strings.Split(msg, "\r\n")
+		for _, v := range vals {
+			if strings.HasPrefix(v, "End Result") {
+				if val, err := parseNumber(vals[0]); err == nil {
+					return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+				}
+			}
+		}
+	case "BERTHOLD微波水分仪":
+		vals := strings.Split(msg, "\t")
+		if len(vals) >= 16 && vals[1] == "RUN" {
+			if val, err := parseNumber(vals[15]); err == nil {
+				return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+			}
+		}
+	case "耀华电子磅"://连续采集15次数据一致，才进行更新
+		if val, err := parseNumber(msg); err == nil {
+			if sdmanger.AddData(epid, val, 15) {
+				sdmanger.Reset(epid)
+				return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+			}
+		}
+	default:
+	}
+	return nil
+}
+
 func sendToClient(typeId string, epid string, msg string) error {
-	if(msg == "") {
+	if msg == "" {
 		return nil
+	}
+	if err := sendToResis(typeId, epid, msg); err != nil {
+		fmt.Printf("发送消息到Redis失败: %v\n", err)
 	}
 	clientsMu.Lock()
 	defer clientsMu.Unlock()
@@ -88,4 +134,15 @@ func SubscribeLimsDataCollection(c *gin.Context) {
 		}
 	}
 
+}
+
+func parseNumber(s string) (float64, error) {
+	// 匹配整数或小数（支持正负号）
+
+	re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
+	match := re.FindString(s)
+	if match == "" {
+		return 0, fmt.Errorf("未找到数字")
+	}
+	return strconv.ParseFloat(match, 64)
 }

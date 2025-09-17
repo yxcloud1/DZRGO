@@ -45,7 +45,7 @@ func FindDeviceByIP(addr string, port string) (string, string, string, int) {
 	}
 }
 
-func bytesToHex(byts[] byte) string{
+func bytesToHex(byts []byte) string {
 	var sb strings.Builder
 	for i, b := range byts {
 		if i > 0 {
@@ -62,7 +62,7 @@ func SaveDcLog(url string, client_ip string, deviceType string, deviceId string,
 		DeviceType: deviceType,
 		DeviceID:   deviceId,
 		Request:    request,
-		RawData:  bytesToHex( body),
+		RawData:    bytesToHex(body),
 		ClientIP:   client_ip,
 	}
 	if tx := db.DB().Conn().Save(log); tx.Error != nil {
@@ -71,7 +71,6 @@ func SaveDcLog(url string, client_ip string, deviceType string, deviceId string,
 		return log.ID, nil
 	}
 }
-
 
 func SaveReciveeData(rawid int, deviceType string, deviceId string, data string, values []string) map[string]any {
 	command := `EXEC sp_lims_save_dc_data @deviceType= ? ,@deviceID= ? ,@sampleID= ? ,@rawID= ? ,@rawData= ? , @item_codes= ? ,
@@ -96,3 +95,4 @@ func SaveReciveeData(rawid int, deviceType string, deviceId string, data string,
 		"id":   deviceId,
 	}
 }
+

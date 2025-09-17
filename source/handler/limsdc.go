@@ -14,7 +14,6 @@ import (
 
 var (
 	delayedTasks = make(map[string]*DelayedMessage, 0)
-
 )
 
 func getOriginalURL(c *gin.Context) string {
@@ -80,12 +79,19 @@ func LimsDataCollection2(c *gin.Context) {
 	body, _ := c.GetRawData()
 
 	context := string(body)
+	if context == "wn00000.0kg\r\n" {
+		c.Status(http.StatusOK)
+		return;
+	}
 	key := fmt.Sprintf("%s_%s", paramType, paramID)
 
 	if dt, ok := delayedTasks[key]; !ok {
 		delayedTasks[key] = NewDelayedTask(paramType, paramID, endFlag, time.Millisecond*time.Duration(dealy), func(d *DelayedMessage) {
-			sendToClient(paramType, paramID, strings.Trim(string(body), "\r\n"))
-			dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
+			msg := strings.Trim(d.message, "\r\n")
+			if msg != "" {
+				sendToClient(paramType, paramID, msg)
+				dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
+			}
 		})
 	} else {
 		dt.delay = time.Millisecond * time.Duration(dealy)

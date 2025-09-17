@@ -4,6 +4,7 @@ import (
 	"acetek-mes/conf"
 	"acetek-mes/handler"
 	"acetek-mes/model"
+	"acetek-mes/redishelper"
 	"acetek-mes/tcpserver"
 	"acetek-mes/udpserver"
 	"bytes"
@@ -24,6 +25,7 @@ var(
 func init() {
 	db.SetOption(conf.Conf().DB.Type, conf.Conf().DB.Url)
 	db.DB().Conn().Debug().AutoMigrate(&model.LimsDcRequestLog{})
+	log.Println("init redis ", redishelper.Instance().InitFromURL(conf.Conf().RedisConfig.Url))
 }
 
 func startApi() {

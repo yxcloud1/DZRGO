@@ -28,11 +28,11 @@
 | IP           | 类型           | 安装位置                      | 串口配置                       | 备注                                                         |  |
 | ------------ | -------------- | ----------------------------- | ------------------------------ | ------------------------------------------------------------ | - |
 | 10.17.50.200 | 232 串口服务器 | 1 期化检实验室两个天平        | 9600N81                        | 天平 1           60001<br />天平 2          60002 |  |
-|              |                |                               |                                |                                                              |  |
 | 10.17.50.201 | 232 串口服务器 | 1 期化检实验室 PH 计/电导率仪 | COM1 1200N81<br />COM2 4800N81 | <br />PH 端口        60001<br />电导率端口 60002         |  |
-|              |                |                               |                                |                                                              |  |
 | 10.17.50.202 | 232串口服务器  | 1期快速水分                   |                                |                                                              |  |
-|              |                |                               |                                |                                                              |  |
+| 10.17.50.203 |                | 1期称重及微波水分             | COM1 微波水分<br />COM2重量    |                                                              |  |
+| 10.17.50.204 |                | 2期称重及微波水分             | COM2 重量                      |                                                              |  |
+| 10.17.50.205 |                | 3期称重及微波水分             |                                |                                                              |  |
 
 Token: apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g
 HTTP Requests Header: Authorization: Bearer apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g
