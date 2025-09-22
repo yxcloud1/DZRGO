@@ -22,7 +22,7 @@
 | 数采机     |          | dc        | 10.17.50.11   |               |                | dc/dc                                         |                     |
 |            |          | portainer | docker        |               |                | admin/Dzrd12345678                            |                     |
 |            |          | dc2       | 10.17.50.12   |               |                | dc/dc                                         |                     |
-| TSDB       |          | hc        | 10.17.50.12   |               |                | dc/dc<br />admin/acetek1234                   |                     |
+| TSDB       |          | hc        | 10.17.50.12   |               |                | dc/dc<br />root/acetek1234                    |                     |
 | PVE        |          |           | 10.17.50.2    |               | 192.168.99.144 | root/Ajn123123                                |                     |
 
 | IP           | 类型           | 安装位置                      | 串口配置                       | 备注                                                         |  |
@@ -33,6 +33,10 @@
 | 10.17.50.203 |                | 1期称重及微波水分             | COM1 微波水分<br />COM2重量    |                                                              |  |
 | 10.17.50.204 |                | 2期称重及微波水分             | COM2 重量                      |                                                              |  |
 | 10.17.50.205 |                | 3期称重及微波水分             |                                |                                                              |  |
+|              |                |                               |                                |                                                              |  |
+| 10.17.50.231 |                | 7AB NAT转换器                 |                                |                                                              |  |
+| 10.17.50.233 |                | 5AB NAT转换器                 |                                |                                                              |  |
+|              |                |                               |                                |                                                              |  |
 
 Token: apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g
 HTTP Requests Header: Authorization: Bearer apiv3_hdjQaPHvJ28dLbqwT-KNiLF7pUIiOoEfEzf9FnI8kHooiylDubWDMPMhhmuxPsuMQEbCgW-VNHbLuxdBNiS77g

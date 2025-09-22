@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -41,7 +42,8 @@ func (sd *stableDetector[T]) Add(value interface{}) bool {
 		sd.lastValue = v
 		sd.count = 1
 	}
-	return sd.count >= sd.threshold
+	//只在第15次达到阈值时返回true
+	return sd.count == sd.threshold
 }
 
 func (sd *stableDetector[T]) Reset() {
@@ -79,8 +81,9 @@ func (m *Manager) AddData(deviceID string, value interface{}, threshold int) boo
 		case string:
 			d = NewDetector[string](threshold)
 		default:
-			m.mu.Unlock()
-			panic("unsupported type")
+			value = fmt.Sprintf("%v", value)
+			d = NewDetector[string]( threshold)
+			//panic("unsupported type")
 		}
 		m.detectors[deviceID] = d
 	}

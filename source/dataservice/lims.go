@@ -31,9 +31,6 @@ func FindDeviceByIP(addr string, port string) (string, string, string, int) {
 				} else {
 					res3 = t
 				}
-				if res3 < 100 {
-					res3 = 100
-				}
 			}
 			if v, ok := res[0]["end_flag"]; ok {
 				res4 = fmt.Sprintf("%v", v)

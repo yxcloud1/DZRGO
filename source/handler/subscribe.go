@@ -3,6 +3,7 @@ package handler
 import (
 	"acetek-mes/redishelper"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -25,6 +26,12 @@ var (
 	clients   = make(map[string]map[uuid.UUID]*websocket.Conn)
 	sdmanger  = NewManager()
 )
+
+func BCDToInt(b byte) int {
+	high := (b >> 4) & 0x0F
+	low := b & 0x0F
+	return int(high*10 + low)
+}
 
 func addClient(clientId string, id uuid.UUID, conn *websocket.Conn) {
 	clientsMu.Lock()
@@ -66,17 +73,47 @@ func sendToResis(typeId string, epid string, msg string) error {
 			}
 		}
 	case "BERTHOLD微波水分仪":
-		vals := strings.Split(msg, "\t")
+		items := strings.Split(msg, "\r\n")
+		vals := strings.Split(items[len(items)-1], "\t")
 		if len(vals) >= 16 && vals[1] == "RUN" {
-			if val, err := parseNumber(vals[15]); err == nil {
+			if val, err := parseNumber(vals[13]); err == nil {
 				return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
 			}
 		}
-	case "耀华电子磅"://连续采集15次数据一致，才进行更新
+	case "耀华电子磅": //连续采集15次数据一致，才进行更新
 		if val, err := parseNumber(msg); err == nil {
-			if sdmanger.AddData(epid, val, 15) {
-				sdmanger.Reset(epid)
+			if sdmanger.AddData(epid, val, 15) && val > 10.0 {
+				//sdmanger.Reset(epid)
 				return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+			}
+		}
+	case "HT9800","XK3168":
+		byts := []byte(msg)
+		if len(byts) == 5 && byts[0] == 0xFF {
+			// 0 0 0 0 0 0 0 0
+			//超载 +-
+			//  NC
+			if byts[1]&0b10010000 == 0b00010000 /*7不超载；4稳定*/ {
+				k := 1.0
+				if byts[1]&0b00100000 == 0b00100000 { //负数
+					k = -1.0
+				}
+				flag := byts[1] & 0b00000111
+				flag = flag -1
+				for i:=0; i< int(flag); i++ {
+					k = k * 0.1
+				}
+
+				val := 0.0
+				val += float64(BCDToInt(byts[2]))
+				val += float64(BCDToInt(byts[3]) * 100)
+				val += float64(BCDToInt(byts[4]) * 10000)
+				val = val * k
+				log.Println("----", typeId, epid, val)
+				if sdmanger.AddData(epid, val, 15) && val > 10.0 {
+					//sdmanger.Reset(epid)
+					return redishelper.Instance().SetRealtime(epid, "value", val, "Good", time.Now())
+				}
 			}
 		}
 	default:

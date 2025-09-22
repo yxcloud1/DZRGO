@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"strings"
@@ -54,6 +55,7 @@ func GlobalMiddleware() gin.HandlerFunc {
 		sb.WriteString(fmt.Sprintf("[Path]     %s\r\n", path))
 		if len(reqBody) > 0 {
 			sb.WriteString(fmt.Sprintf("[Request]  %s\r\n", string(reqBody)))
+			sb.WriteString(fmt.Sprintf("[RequRaw]  %s\r\n", hex.EncodeToString(reqBody)))
 		} else {
 			sb.WriteString(fmt.Sprintf("[Request]  %v\r\n", c.Request.URL.Query()))
 		}

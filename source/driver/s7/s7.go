@@ -170,6 +170,7 @@ func (c *S7Client) Read() (map[string]interface{}, error) {
 				v.Quality = "Bad"
 				v.Value = nil
 				v.Timestamp = time.Now()
+				log.Println("resultError:", resultError, "parse error:", err)
 			}
 
 		} else {

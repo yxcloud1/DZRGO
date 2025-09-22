@@ -41,20 +41,6 @@ func getClientIP(c *gin.Context) string {
 	return ip
 }
 
-func receiveProcess(context string, deviceType string, deviceId string, endFlag string, delay time.Duration) {
-	key := fmt.Sprintf("%s_%s", deviceType, deviceId)
-	if dt, ok := delayedTasks[key]; !ok {
-		delayedTasks[key] = NewDelayedTask(deviceType, deviceId, endFlag, delay, func(d *DelayedMessage) {
-			dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
-		})
-	} else {
-		dt.delay = delay
-		dt.endFlag = endFlag
-	}
-	dt := delayedTasks[key]
-	dt.Receive(context, []byte(context))
-}
-
 func LimsDataCollection(c *gin.Context) {
 	paramType := c.Param("type")
 	paramID := c.Param("id")
@@ -81,27 +67,40 @@ func LimsDataCollection2(c *gin.Context) {
 	context := string(body)
 	if context == "wn00000.0kg\r\n" {
 		c.Status(http.StatusOK)
-		return;
+		return
+	}
+	if len(body) == 5 && body[0] == 0xFF && body[2] == 0 && body[3] == 0 && body[4] == 0 {
+		c.Status(http.StatusOK)
+		return
 	}
 	key := fmt.Sprintf("%s_%s", paramType, paramID)
-
-	if dt, ok := delayedTasks[key]; !ok {
-		delayedTasks[key] = NewDelayedTask(paramType, paramID, endFlag, time.Millisecond*time.Duration(dealy), func(d *DelayedMessage) {
-			msg := strings.Trim(d.message, "\r\n")
-			if msg != "" {
-				sendToClient(paramType, paramID, msg)
-				dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
-			}
-		})
+	log.Println("*******", paramType, paramID, dealy, context)
+	if dealy > 0 {
+		if dt, ok := delayedTasks[key]; !ok {
+			delayedTasks[key] = NewDelayedTask(paramType, paramID, endFlag, time.Millisecond*time.Duration(dealy),
+				func(d *DelayedMessage) {
+					msg := strings.Trim(d.message, "\r\n")
+					if msg != "" {
+						sendToClient(paramType, paramID, msg)
+						dataservice.SaveReciveeData(0, d.deviceType, d.deviceId, d.message, parseReceiveData(d.message, "\r\n"))
+					}
+				})
+		} else {
+			dt.delay = time.Millisecond * time.Duration(dealy)
+			dt.endFlag = endFlag
+		}
+		dt := delayedTasks[key]
+		dt.Receive(context, body)
 	} else {
-		dt.delay = time.Millisecond * time.Duration(dealy)
-		dt.endFlag = endFlag
+		msg := strings.Trim(context, "\r\n")
+		if msg != "" {
+			sendToClient(paramType, paramID, string(body))
+			dataservice.SaveReciveeData(0, paramType, paramID, msg, parseReceiveData(msg, "\r\n"))
+		}
 	}
-	dt := delayedTasks[key]
 	if _, err := dataservice.SaveDcLog(getOriginalURL(c), remoteAddr, paramType, paramID, string(body), body); err != nil {
 		log.Println("保存日志失败:", err)
 	}
-	dt.Receive(context, body)
 	c.Status(http.StatusOK)
 }
 
