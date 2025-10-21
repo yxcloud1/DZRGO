@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yxcloud1/go-comm/logger"
 )
 
 type bodyWriter struct {
@@ -63,7 +63,7 @@ func GlobalMiddleware() gin.HandlerFunc {
 		sb.WriteString(fmt.Sprintf("[Http Code] %v\r\n", statusCode))
 		sb.WriteString(fmt.Sprintf("[Duration] %v\r\n", duration))
 		sb.WriteString("====================================")
-		logger.TxtLog(sb.String())
-
+		//logger.TxtLog(sb.String())
+		log.Println(sb.String())
 	}
 }

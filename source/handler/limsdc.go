@@ -74,7 +74,7 @@ func LimsDataCollection2(c *gin.Context) {
 		return
 	}
 	key := fmt.Sprintf("%s_%s", paramType, paramID)
-	log.Println("*******", paramType, paramID, dealy, context)
+	//log.Println("*******", paramType, paramID, dealy, context)
 	if dealy > 0 {
 		if dt, ok := delayedTasks[key]; !ok {
 			delayedTasks[key] = NewDelayedTask(paramType, paramID, endFlag, time.Millisecond*time.Duration(dealy),

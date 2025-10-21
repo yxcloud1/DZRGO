@@ -29,8 +29,10 @@ func init() {
 }
 
 func startApi() {
-	r := gin.Default()
-	r.Use(handler.GlobalMiddleware())
+	//r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery());
+	//r.Use(handler.GlobalMiddleware())
 	path := conf.Conf().Api.Path
 	if path == "" {
 		path = "/"
