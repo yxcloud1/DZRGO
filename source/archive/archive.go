@@ -105,11 +105,16 @@ func init() {
 }
 
 func main() {
+	if redishelper.Instance().Client() == nil {
+		log.Println("redis not connected")
+		return
+	}
 	keys, err := redishelper.Instance().Client().Keys(context.Background(), "point:*:points").Result()
 
 	if err != nil {
 		log.Printf("Fetch device keys failed: %v", err)
 	}
+	log.Println(keys)
 	for _, key := range keys {
 		deviceID := strings.TrimPrefix(strings.TrimSuffix(key, ":points"), "point:")
 		reals, err := redishelper.Instance().Client().SMembers(context.Background(), key).Result()
